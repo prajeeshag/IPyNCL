@@ -46,7 +46,15 @@ class NCLKernel(Kernel):
         try:
             self._executable = find_executable("ncl")
             #self._executable = self._executable+" -p"
-            self._child  = spawn(self._executable,timeout = 300, env={'TERM':'xterm','PAGER':'cat'})
+            envn={}
+            for key in os.environ:
+                if key == 'TERM':
+                    envn[key] = 'xterm'
+                elif key == 'PAGER':
+                    envn[key] = 'cat'
+                else:    
+                    envn[key]=os.environ[key]
+            self._child  = spawn(self._executable,timeout = 300, env=envn)
             self._child.log=sys.stdout
             self.nclwrapper = replw(self._child,"ncl [0-9]+",None,line_output_callback=self.process_output)
             self._child.setwinsize(400,500)
@@ -71,7 +79,8 @@ class NCLKernel(Kernel):
                 #that is these commands are run from ncl
                 cmd    = "system(\""+code.replace(";!","").strip()+"\")"
                 output = self.nclwrapper.run_command(cmd,timeout=None)
-                output = '\n'.join(output.splitlines()[1::])+'\n'
+                if output:
+                    output = '\n'.join(output.splitlines()[1::])+'\n'
             elif code.startswith(';%debug'):
                 #self.nclwrapper.child.send(code+"\n\Q")
                 #self.nclwrapper.child.expect(u'ncl \d> ')
